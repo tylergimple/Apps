@@ -23,8 +23,8 @@ ui<-dashboardPage(skin="red",
                                 dateInput("end_date", "End Date:", value = Sys.Date()),
                                 selectInput("measure", "Measure",
                                             c("open", "high","low","close")),
-                                textInput("ticker1", "1st Ticker (All Caps)", "AAPL"),
-                                textInput("ticker2", "2nd Ticker (All Caps)", "MSFT"),
+                                textInput("ticker1", "1st Ticker", "AAPL"),
+                                textInput("ticker2", "2nd Ticker", "MSFT"),
                                 width = 2)
                       )
                     ),
