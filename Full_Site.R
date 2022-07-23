@@ -1,4 +1,5 @@
 library(shiny)
+library(shiny)
 library(shinydashboard)
 library(plotly)
 library(rsconnect)
@@ -50,7 +51,7 @@ ui<-dashboardPage(skin="red",
                               textInput("ticker", "Ticker", "AAPL"),
                               dateInput("start_date", "Start Date:", value = Sys.Date()-(365*10)),
                               dateInput("end_date", "End Date:", value = Sys.Date()),
-                              numericInput("initial", "Initial Deposit", 10000, min = 0, max = 1000000000),
+                              numericInput("initial_past", "Initial Deposit", 10000, min = 0, max = 1000000000),
                               numericInput("amount", "Investment Amount", 100, min = 1, max = 10000000),
                               numericInput("freq", "Investment Frequency in Days", 30, min = 1, max = 365),
                               width = 2),
@@ -115,7 +116,7 @@ ui<-dashboardPage(skin="red",
                             h4("The Collatz Conjecture is one of the most famous unsolved problems in mathematics. The conjecture asks whether repeating two simple arithmetic operations will eventually transform every positive integer into 1. It concerns sequences of integers in which each term is obtained from the previous term as follows: if the number is even, the next number is one half of the previous term. If the previous number is odd, the next term is 3 times the previous number plus 1. The conjecture states that these sequences always reach 1, no matter which positive integer is chosen to start the sequence. Input a beginning number and watch it fall to 1 or see if you can find a counter-example!"),
                             box(plotlyOutput("c_conj_plot"), width=10),
                             box(
-                              numericInput("int_num", "Number to Test", 27, min = 0, max = 9999999999999999999999999999),
+                              numericInput("int_num", "Number to Test", 27, min = 0, max = 99999999999999999999999999999999999),
                               width = 2),
                             box(textOutput("c_conj_print"), width=2))
                   )
@@ -188,7 +189,7 @@ server<- function(input, output){
     Deposit<-M2Spread$STotal_Deposit
     Initial<-M2Spread$Sstarting
     DF<-cbind(Interest,Deposit,Initial)
-    resize <- DF[-c(Years+1,Years+2),]
+    resize <- as.data.table(DF[-c(Years+1,Years+2),])
     MDF<-melt(resize)
     plotly_data<-cbind(resize, SYear)
     df_plotly_data <- as.data.frame(plotly_data)
@@ -232,7 +233,7 @@ server<- function(input, output){
     Ticker<-input$ticker
     Investment_Start<-input$start_date
     Investment_End<-input$end_date
-    Initial_Deposit<-input$initial
+    Initial_Deposit<-input$initial_past
     Investment_Frequency<-input$freq
     Investment_Amount<-input$amount
     
@@ -255,7 +256,7 @@ server<- function(input, output){
     M3Spread <- M2Spread %>% mutate(Cumulative_Deposit = cumsum(Deposit))
     M4Spread <- M3Spread %>% mutate(Value = (Cumulative_Shares*close))
     
-    clean_spread<-M4Spread[, c("Cumulative_Deposit", "Value")]
+    clean_spread<-as.data.table(M4Spread[, c("Cumulative_Deposit", "Value")])
     colnames(clean_spread)[1] <- "Deposit"
     colnames(clean_spread)[2] <- "Investment"
     m_clean_spread<-melt(clean_spread)
@@ -271,7 +272,7 @@ server<- function(input, output){
     Ticker<-input$ticker
     Investment_Start<-input$start_date
     Investment_End<-input$end_date
-    Initial_Deposit<-input$initial
+    Initial_Deposit<-input$initial_past
     Investment_Frequency<-input$freq
     Investment_Amount<-input$amount
     
@@ -294,7 +295,7 @@ server<- function(input, output){
     M3Spread <- M2Spread %>% mutate(Cumulative_Deposit = cumsum(Deposit))
     M4Spread <- M3Spread %>% mutate(Value = (Cumulative_Shares*close))
     
-    clean_spread<-M4Spread[, c("Cumulative_Deposit", "Value")]
+    clean_spread<-as.data.table(M4Spread[, c("Cumulative_Deposit", "Value")])
     colnames(clean_spread)[1] <- "Deposit"
     colnames(clean_spread)[2] <- "Investment"
     m_clean_spread<-melt(clean_spread)
@@ -306,9 +307,9 @@ server<- function(input, output){
     Fin<-as.character(count(M4Spread))
     
     Final_Value <- M4Spread[Fin,13]
-    Final_Deposit <- M4Spread[Fin,12]
-    Final_Difference <- Final_Value-Final_Deposit
-    z<-paste("Your Final Value is:",currency(Final_Value), "Your Final Deposit is:", currency(Final_Deposit),"For a Total Gain/Loss of:",currency(Final_Difference))
+    Final_Deposit_two <- M4Spread[Fin,12]
+    Final_Difference <- Final_Value-Final_Deposit_two
+    z<-paste("Your Final Value is:",currency(Final_Value), "Your Final Deposit is:", currency(Final_Deposit_two),"For a Total Gain/Loss of:",currency(Final_Difference))
     print(z)
   })
   
@@ -353,7 +354,7 @@ server<- function(input, output){
     M1Spread[1, 4] = Mortgage_Amount*Monthly_Interest_Rate
     M2Spread <- M1Spread %>% mutate(Principal = Payment - Interest)
     
-    Slim_Spread <- as.data.frame(cbind(M2Spread$Principal, M2Spread$Interest))
+    Slim_Spread <- as.data.table(cbind(M2Spread$Principal, M2Spread$Interest))
     colnames(Slim_Spread)[1] <- "Principal"
     colnames(Slim_Spread)[2] <- "Interest"
     mSpread <- cbind(melt(Slim_Spread),Period)
@@ -492,7 +493,6 @@ server<- function(input, output){
 
   })
 
-  
   output$c_conj_plot <- renderPlotly({
     intnum<-input$int_num
     
