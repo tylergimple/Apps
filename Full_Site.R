@@ -9,6 +9,8 @@ library(formattable)
 library(data.table)
 library(stats)
 library(dplyr)
+library(pracma)
+library(transformr)
 
 ui<-dashboardPage(skin="red",
                   dashboardHeader(title = "Tyler's Website"),
@@ -23,105 +25,119 @@ ui<-dashboardPage(skin="red",
                       menuItem("Chaos Theory", tabName = "chaos", icon = icon("snowflake-o"),
                                menuSubItem("Sierpinski Triangle", tabName = "s_tri", icon = icon("codepen")),
                                menuSubItem("Barnsley Fern", tabName = "b_fern", icon = icon("leaf")),
+                               menuSubItem("Double Pendulum", tabName = "d_pen",icon = icon("atom")),
                                menuSubItem("Collatz Conjecture", tabName = "c_conj", icon = icon("xing")))
                     )
                   ),
                   dashboardBody(
-                  tabItems(
-                    tabItem("home",
-                            fluidPage(
-                              h1("Welcome to my Website of Random Mathematical Awesomeness!"),
-                              h4("The entire site is built in R primarily using the Plotly and Shiny Packages. Contact me at tylergimple@gmail.com if you would like to learn more about what you see here or if you have any cool ideas about future projects to add to this site. Have fun exploring!")
-                            )),
-                    tabItem("gen_grow",
-                            h4("Adjust the sliders to change the length of investment, initial investment, the amount being invested per month, or the annual rate of return. Note how the graph changes as you adjust the variables!"),
-                            box(plotlyOutput("gen_grow_plot"), width=10),
-                            box(
-                              sliderInput("years", "Number of Years", min = 0, max = 100, value = 30),
-                              numericInput("initial", "Initial Amount:", 10000, min = 1, max = 1000000000),
-                              numericInput("monthly_investment", "Monthly Investment:", 1000, min = 1, max = 1000000000),
-                              numericInput("yearly_return", "Annual Return %", 7, min = 0, max = 100),
-                              width = 2),
-                            box(textOutput("gen_grow_print"), width=2),
-                    ),
-                    tabItem("past_stock_perf",
-                            h4("The figure below examines how an investment would perform if left in a non-interest earning account vs. being invested in a stock or mutual fund. Adjust any of the variables to see how you would have done!"),
-                            box(plotlyOutput("past_stock_plot"), width=10),
-                            box(
-                              textInput("ticker", "Ticker", "AAPL"),
-                              dateInput("start_date", "Start Date:", value = Sys.Date()-(365*10)),
-                              dateInput("end_date", "End Date:", value = Sys.Date()),
-                              numericInput("initial_past", "Initial Deposit", 10000, min = 0, max = 1000000000),
-                              numericInput("amount", "Investment Amount", 100, min = 1, max = 10000000),
-                              numericInput("freq", "Investment Frequency in Days", 30, min = 1, max = 365),
-                              width = 2),
-                            box(textOutput("past_stock_print"))
-                    ),
-                    tabItem("two_stock",
-                            h4("See how two different stocks or mutual funds performed vs. one another."),
-                            box(plotlyOutput("two_stock_plot"), width=10),
-                            box(
-                              dateInput("start_date1", "Start Date:", value = Sys.Date()-(365*10)),
-                              dateInput("end_date1", "End Date:", value = Sys.Date()),
-                              selectInput("measure", "Measure",
-                                          c("open", "high","low","close")),
-                              textInput("ticker1", "1st Ticker", "AAPL"),
-                              textInput("ticker2", "2nd Ticker", "MSFT"),
-                              width = 2)
-                    ),
-                    tabItem("mort_calc",
-                            h4("Examine how a mortgage is paid off over time. Adjust any of the variables to see how it will change."),
-                            box(plotlyOutput("mort_calc_plot"), width=10),
-                            box(
-                              numericInput("cost", "Cost of Property", 500000, min = 0, max = 1000000000),
-                              numericInput("down_payment", "Down Payment in % of Total Property Cost:", 20, min = 0, max = 100),
-                              numericInput("interest_rate", "Mortgage Interest Rate", 3, min = 0, max = 40),
-                              sliderInput("length", "Length of Mortgage in Years", min = 0, max = 100, value = 30),
-                              width = 2),
-                            box(textOutput("mort_calc_print"))
-                            ),
-                    tabItem("chaos",
+                    tabItems(
+                      tabItem("home",
+                              fluidPage(
+                                h1("Welcome to my Website of Random Mathematical Awesomeness!"),
+                                h4("The entire site is built in R primarily using the Plotly and Shiny Packages. Contact me at tylergimple@gmail.com if you would like to learn more about what you see here or if you have any cool ideas about future projects to add to this site. Have fun exploring!")
+                              )),
+                      tabItem("gen_grow",
+                              h4("Adjust the sliders to change the length of investment, initial investment, the amount being invested per month, or the annual rate of return. Note how the graph changes as you adjust the variables!"),
+                              box(plotlyOutput("gen_grow_plot"), width=10),
+                              box(
+                                sliderInput("years", "Number of Years", min = 0, max = 100, value = 30),
+                                numericInput("initial", "Initial Amount:", 10000, min = 1, max = 1000000000),
+                                numericInput("monthly_investment", "Monthly Investment:", 1000, min = 1, max = 1000000000),
+                                numericInput("yearly_return", "Annual Return %", 7, min = 0, max = 100),
+                                width = 2),
+                              box(textOutput("gen_grow_print"), width=2),
+                      ),
+                      tabItem("past_stock_perf",
+                              h4("The figure below examines how an investment would perform if left in a non-interest earning account vs. being invested in a stock or mutual fund. Adjust any of the variables to see how you would have done!"),
+                              box(plotlyOutput("past_stock_plot"), width=10),
+                              box(
+                                textInput("ticker", "Ticker", "AAPL"),
+                                dateInput("start_date", "Start Date:", value = Sys.Date()-(365*10)),
+                                dateInput("end_date", "End Date:", value = Sys.Date()),
+                                numericInput("initial_past", "Initial Deposit", 10000, min = 0, max = 1000000000),
+                                numericInput("amount", "Investment Amount", 100, min = 1, max = 10000000),
+                                numericInput("freq", "Investment Frequency in Days", 30, min = 1, max = 365),
+                                width = 2),
+                              box(textOutput("past_stock_print"))
+                      ),
+                      tabItem("two_stock",
+                              h4("See how two different stocks or mutual funds performed vs. one another."),
+                              box(plotlyOutput("two_stock_plot"), width=10),
+                              box(
+                                dateInput("start_date1", "Start Date:", value = Sys.Date()-(365*10)),
+                                dateInput("end_date1", "End Date:", value = Sys.Date()),
+                                selectInput("measure", "Measure",
+                                            c("open", "high","low","close")),
+                                textInput("ticker1", "1st Ticker", "AAPL"),
+                                textInput("ticker2", "2nd Ticker", "MSFT"),
+                                width = 2)
+                      ),
+                      tabItem("mort_calc",
+                              h4("Examine how a mortgage is paid off over time. Adjust any of the variables to see how it will change."),
+                              box(plotlyOutput("mort_calc_plot"), width=10),
+                              box(
+                                numericInput("cost", "Cost of Property", 500000, min = 0, max = 1000000000),
+                                numericInput("down_payment", "Down Payment in % of Total Property Cost:", 20, min = 0, max = 100),
+                                numericInput("interest_rate", "Mortgage Interest Rate", 3, min = 0, max = 40),
+                                sliderInput("length", "Length of Mortgage in Years", min = 0, max = 100, value = 30),
+                                width = 2),
+                              box(textOutput("mort_calc_print"))
+                      ),
+                      tabItem("chaos",
                               fluidPage(
                                 h1("Chaos")
                               )),
-                    tabItem("s_tri",
-                            h4("The Sierpinski Triangle is a fractal attractive fixed set with the overall shape of an equilateral triangle, subdivided recursively into smaller equilateral triangles. There are many different ways to construct the triangle, however, the way here uses a chaotic iterated function system. Use the sliders to adjust the positions of the corners of the triangle, the beginning point, or the number of dots to see how the figure reacts!"),
-                            box(plotlyOutput("s_tri_plot"), width=8),
-                            box(
-                              sliderInput("corn_ax", "Corner A X-Coordinate", min = 0, max = 100, value = 0),
-                              sliderInput("corn_ay", "Corner A Y-Coordinate", min = 0, max = 100, value = 0),
-                              sliderInput("corn_bx", "Corner B X-Coordinate", min = 0, max = 100, value = 50),
-                              sliderInput("corn_by", "Corner B Y-Coordinate", min = 0, max = 100, value = 60),
-                              sliderInput("corn_cx", "Corner C X-Coordinate", min = 0, max = 100, value = 100),
-                              width = 2),
-                            box(
-                              sliderInput("corn_cy", "Corner C Y-Coordinate", min = 0, max = 100, value = 0),
-                              sliderInput("start_x", "Starting X-Coordinate", min = 0, max = 100, value = 30),
-                              sliderInput("start_y", "Starting Y-Coordinate", min = 0, max = 100, value = 30),
-                              sliderInput("its", "Dots", min = 1, max = 15000, value = 7500),
-                              selectInput("color", "Color",
-                                          c("blue", "pink","red","green", "black", "yellow","brown","")),
-                              width = 2)
-                            ),
-                    tabItem("b_fern",
-                            h4("The Barnsley fern is a fractal and mathematically generated pattern that can be reproducible at any magnification or reduction. It is constructed using four affine transformations. Use the sliders to adjust the starting X and Y Points as well as the number of dots appearing on the screen and see how the fern reacts!"),
-                            box(plotlyOutput("b_fern_plot"), width=10),
-                            box(
-                              sliderInput("beg_x", "Starting X-Coordinate", min = 0, max = 20, value = 0),
-                              sliderInput("beg_y", "Starting Y-Coordinate", min = 0, max = 20, value = 1),
-                              sliderInput("iters", "Dots", min = 0, max = 150, value = 75),
-                              width = 2)
-                    ),
-                    tabItem("c_conj",
-                            h4("The Collatz Conjecture is one of the most famous unsolved problems in mathematics. The conjecture asks whether repeating two simple arithmetic operations will eventually transform every positive integer into 1. It concerns sequences of integers in which each term is obtained from the previous term as follows: if the number is even, the next number is one half of the previous term. If the previous number is odd, the next term is 3 times the previous number plus 1. The conjecture states that these sequences always reach 1, no matter which positive integer is chosen to start the sequence. Input a beginning number and watch it fall to 1 or see if you can find a counter-example!"),
-                            box(plotlyOutput("c_conj_plot"), width=10),
-                            box(
-                              numericInput("int_num", "Number to Test", 27, min = 0, max = 99999999999999999999999999999999999),
-                              width = 2),
-                            box(textOutput("c_conj_print"), width=2))
+                      tabItem("s_tri",
+                              h4("The Sierpinski Triangle is a fractal attractive fixed set with the overall shape of an equilateral triangle, subdivided recursively into smaller equilateral triangles. There are many different ways to construct the triangle, however, the way here uses a chaotic iterated function system. Use the sliders to adjust the positions of the corners of the triangle, the beginning point, or the number of dots to see how the figure reacts!"),
+                              box(plotlyOutput("s_tri_plot"), width=8),
+                              box(
+                                sliderInput("corn_ax", "Corner A X-Coordinate", min = 0, max = 100, value = 0),
+                                sliderInput("corn_ay", "Corner A Y-Coordinate", min = 0, max = 100, value = 0),
+                                sliderInput("corn_bx", "Corner B X-Coordinate", min = 0, max = 100, value = 50),
+                                sliderInput("corn_by", "Corner B Y-Coordinate", min = 0, max = 100, value = 60),
+                                sliderInput("corn_cx", "Corner C X-Coordinate", min = 0, max = 100, value = 100),
+                                width = 2),
+                              box(
+                                sliderInput("corn_cy", "Corner C Y-Coordinate", min = 0, max = 100, value = 0),
+                                sliderInput("start_x", "Starting X-Coordinate", min = 0, max = 100, value = 30),
+                                sliderInput("start_y", "Starting Y-Coordinate", min = 0, max = 100, value = 30),
+                                sliderInput("its", "Dots", min = 1, max = 15000, value = 7500),
+                                selectInput("color", "Color",
+                                            c("blue", "pink","red","green", "black", "yellow","brown","")),
+                                width = 2)
+                      ),
+                      tabItem("b_fern",
+                              h4("The Barnsley fern is a fractal and mathematically generated pattern that can be reproducible at any magnification or reduction. It is constructed using four affine transformations. Use the sliders to adjust the starting X and Y Points as well as the number of dots appearing on the screen and see how the fern reacts!"),
+                              box(plotlyOutput("b_fern_plot"), width=10),
+                              box(
+                                sliderInput("beg_x", "Starting X-Coordinate", min = 0, max = 20, value = 0),
+                                sliderInput("beg_y", "Starting Y-Coordinate", min = 0, max = 20, value = 1),
+                                sliderInput("iters", "Dots", min = 0, max = 150, value = 75),
+                                width = 2)
+                      ),
+                      tabItem("d_pen",
+                              h4("A double pendulum simulation is a computational model that represents the motion of a double pendulum, which consists of two pendulums attached end to end. It's a fascinating system in physics because it's a prime example of chaotic dynamics—its behavior is highly sensitive to initial conditions.The model computes the pendulum positions by solving the system of nonlinear differential equations governing the motion over time. The position of the first pendulum is derived using its length and angle while the second pendulum’s position is calculated based on the first pendulum’s endpoint and its own length and angle. This approach captures the system's intricate dynamics with precision. Adjust any of the variables and see how the pendulum's behavior changes."),
+                              box(plotlyOutput("d_pen_plot"), width=10),
+                              box(
+                                sliderInput("leng_arm1", "Length of Arm 1", min = 0, max = 100, value = 50),
+                                sliderInput("leng_arm2", "Length of Arm 2", min = 0, max = 100, value = 50),
+                                sliderInput("leng_arm2", "Length of Arm 2", min = 0, max = 100, value = 50),
+                                sliderInput("mass_bob1", "Mass of Bob 1", min = 0, max = 100, value = 50),
+                                sliderInput("mass_bob2", "Mass of Bob 2", min = 0, max = 100, value = 50),
+                                sliderInput("ang1", "Starting Angle 1", min = 0, max = 360, value = 45),
+                                sliderInput("ang2", "Starting Angle 2", min = 0, max = 360, value = 120),
+                                width = 2)
+                      ),
+                      tabItem("c_conj",
+                              h4("The Collatz Conjecture is one of the most famous unsolved problems in mathematics. The conjecture asks whether repeating two simple arithmetic operations will eventually transform every positive integer into 1. It concerns sequences of integers in which each term is obtained from the previous term as follows: if the number is even, the next number is one half of the previous term. If the previous number is odd, the next term is 3 times the previous number plus 1. The conjecture states that these sequences always reach 1, no matter which positive integer is chosen to start the sequence. Input a beginning number and watch it fall to 1 or see if you can find a counter-example!"),
+                              box(plotlyOutput("c_conj_plot"), width=10),
+                              box(
+                                numericInput("int_num", "Number to Test", 27, min = 0, max = 99999999999999999999999999999999999),
+                                width = 2),
+                              box(textOutput("c_conj_print"), width=2))
+                    )
                   )
-                 )
-                )
+)
 server<- function(input, output){
   output$two_stock_plot <- renderPlotly({
     data1<-tq_get(input$ticker1,
@@ -155,7 +171,7 @@ server<- function(input, output){
     Initial<-input$initial
     Monthly_Deposit<-input$monthly_investment
     return<-input$yearly_return
-      
+    
     Return <- return/100 #Input the Yearly Return
     Yearly_Investment <- Monthly_Deposit*12
     Iyear<-(((Initial)*(1+Return))+Yearly_Investment)
@@ -197,8 +213,8 @@ server<- function(input, output){
     plot_ly(df_plotly_data, x = ~SYear, y = ~Initial, type = 'bar', name = 'Initial') %>% add_trace(y = ~Deposit, name = 'Deposit') %>% add_trace(y = ~Interest, name = 'Interest') %>% layout(yaxis = list(title = 'Dollars'), barmode = 'stack') %>% layout(title = "Investment Growth",
                                                                                                                                                                                                                                                               xaxis = list(title = "Year"),
                                                                                                                                                                                                                                                               yaxis = list(title = "Dollars"))
-      
-
+    
+    
   })
   
   output$gen_grow_print <- renderPrint({
@@ -425,49 +441,106 @@ server<- function(input, output){
     
     plot_ly(data = graph, x = ~xvals, y = ~yvals, type = "scatter", mode = "markers", marker = list(size = 1, color = color))
   })
-
-  output$b_fern_plot <- renderPlotly({
-    begx<-input$beg_x
-    begy<-input$beg_y
-    iters1<-input$iters
+  
+  output$s_tri_plot <- renderPlotly({
+    corn_Ax<-input$corn_ax
+    corn_Bx<-input$corn_bx
+    corn_Cx<-input$corn_cx
+    Start_x<-input$start_x
+    Start_y<-input$start_y
+    corn_Ay<-input$corn_ay
+    corn_By<-input$corn_by
+    corn_Cy<-input$corn_cy
+    its<-input$its
+    color<-input$color
     
-    new_pointx<-(begx*0.85)+(begy*0.04)
-    new_pointy<-(begx*-0.04)+(begy*0.85)+1.6
-    one <- (as.numeric(round(runif((iters1*1), min = 1, max = 1),0)))
-    two <- (as.numeric(round(runif((iters1*73), min = 2, max = 2),0)))
-    three <- (as.numeric(round(runif((iters1*13), min = 3, max = 3),0)))
-    four <- (as.numeric(round(runif((iters1*11), min = 4, max = 4),0)))
-    y<-sample(c(one,two,three,four))
+    new_point<-((Start_x+corn_Cx)/2)
+    y <- as.numeric(round(runif(its, min = 1, max = 3),0))
+    z <-as.data.frame(capture.output(for (val in y) {
+      if(val == 3)
+        new_point = ((new_point+corn_Cx)/2)
+      if(val == 2)
+        new_point = ((new_point+corn_Bx)/2)
+      if(val == 1)
+        new_point = ((new_point+corn_Ax)/2)
+      print(new_point)
+    }))
+    colnames(z) <- c("xvals")
+    cleanz = as.data.frame(as.numeric(substring(z$xvals,5)))
+    colnames(cleanz)<- c("xvals")
     
-    z<-as.data.frame(capture.output(for (val in y) {
-      if(val == 1){
-        new_pointx = 0
-        new_pointy = (new_pointy*0.16)
-        print(new_pointx)
-        print(new_pointy)}
-      if(val == 2){
-        new_pointx = (new_pointx*0.85)+(new_pointy*0.04)
-        new_pointxi=(1.17647058823529*(new_pointx))-(0.0470588235294118*new_pointy)
-        new_pointy = (new_pointxi*-0.04)+(new_pointy*0.85)+1.6
-        print(new_pointx)
-        print(new_pointy)}
-      if(val == 3){
-        new_pointx = (new_pointx*-0.15)+(new_pointy*0.28)
-        new_pointxi = ((-6.66667*new_pointx)+(1.86667*new_pointy))
-        new_pointy = (new_pointxi*0.26)+(0.24*new_pointy)+1.6
-        print(new_pointx)
-        print(new_pointy)}
-      if(val == 4){
-        new_pointx = (new_pointx*0.2)-(new_pointy*0.26)
-        new_pointxi = ((5*new_pointx)+(1.3*new_pointy))
-        new_pointy = (new_pointxi*0.23)+(0.2*new_pointy)+0.44
-        print(new_pointx)
-        print(new_pointy)}
+    p<-as.data.frame(capture.output(for (val in y) {
+      if(val == 3)
+        new_point = ((new_point+corn_Cy)/2)
+      if(val == 2)
+        new_point = ((new_point+corn_By)/2)
+      if(val == 1)
+        new_point = ((new_point+corn_Ay)/2)
+      print(new_point)
+    }))
+    colnames(p) <- c("yvals")
+    cleanp<-as.data.frame(as.numeric(substring(p$yvals,5)))
+    colnames(cleanp) <- c("yvals")
+    
+    
+    graph<-as.data.frame(cbind(cleanz,cleanp))
+    colnames(graph) <- c("xvals", "yvals")
+    
+    
+    plot_ly(data = graph, x = ~xvals, y = ~yvals, type = "scatter", mode = "markers", marker = list(size = 1, color = color))
+  })
+  
+  output$d_pen_plot <- renderPlotly({
+    startx<-0
+    starty<-0
+    r1<-input$leng_arm1 #Length of arm 1
+    r2<-input$leng_arm2 #Length of arm 2
+    m1<-input$mass_bob1 #Mass of bob 1
+    m2<-input$mass_bob2 #Mass of bob 2
+    g<-1 #Gravity
+    angle1<- input$ang1 #Input Angle as Degrees
+    angle2<- input$ang2 #Input Angle as Degrees
+    a1<-deg2rad(-angle1) #angle of first pendulum (0 = vertical downwards, counter-clockwise is positive)
+    a2<-deg2rad(-angle2) #angle of second pendulum (0 = vertical downwards, counter-clockwise is positive)
+    a1_v<-0
+    a2_v<-0
+    seconds<-30
+    
+    i<-1
+    z<-as.data.frame(capture.output(while (i<seconds*10){
+      num1<- -g * ((2*m1)+m2)*sin(a1)
+      num2<- -m2*g*(sin(a1-(2*a2)))
+      num3<- -2*sin(a1-a2)*m2
+      num4<- (a2_v^2*r2)+((a1_v^2)*r1*cos(a1-a2))
+      denom1<- r1*(2*m1+m2-m2*cos(2*a1-2*a2))
+      a1_a<-(num1+num2+num3*num4)/denom1
+      
+      num5<-2*sin(a1-a2)
+      num6<-(a1_v^2*r1*(m1+m2))
+      num7<-g*(m1+m2)*cos(a1)
+      num8<-a2_v^2*r2*m2*cos(a1-a2)
+      denom2<- r2*(2*m1+m2-m2*cos(2*a1-2*a2))
+      a2_a<-((num5*(num6+num7+num8))/denom2)
+      
+      x1<-as.numeric(startx - (r1*sin(a1))) #horizontal position of first pendulum mass
+      y1<-as.numeric(starty - (r1*cos(a1))) #vertical position of first pendulum mass
+      x2<-as.numeric(x1 - (r2*sin(a2))) #horizontal position of second pendulum mass
+      y2<-as.numeric(y1 - (r2*cos(a2))) #vertical position of second pendulum mass
+      print(startx)
+      print(starty)
+      print(x1)
+      print(y1)
+      print(x2)
+      print(y2)
+      a1_v=a1_v+a1_a
+      a2_v=a2_v+a2_a
+      a1=a1+a1_v
+      a2=a2+a2_v
+      i=i+1
     }))
     colnames(z)<- c("vals")
     cleanz<-as.data.frame(as.numeric(substring(z$vals,4)))
     colnames(cleanz)<- c("vals")
-    
     
     grabx<-seq(1, nrow(cleanz), by=2)
     xpoint<-as.data.frame(cleanz$vals[c(grabx)])
@@ -477,22 +550,27 @@ server<- function(input, output){
     ypoint<-as.data.frame(cleanz$vals[c(graby)])
     colnames(ypoint) <- c("yvals")
     
-    graph<-cbind(xpoint,ypoint)
+    time<-as.data.frame(as.numeric(rep(seq(from=.1,to=((nrow(xpoint-1)))/30,by=.1),each=3)))
+    colnames(time) <- c("Time")
+    
+    type<-as.data.frame(c("Origin","Top Bob","Bottom Bob"))
+    colnames(type) <- c("Type")
+    
+    
+    graph<-cbind(xpoint,ypoint,time,type)
     
     
     graph %>%
       plot_ly(
         x = ~xvals, 
-        y = ~yvals,
-        frame = ~iters1, 
-        text = ~xvals,
-        hoverinfo = "text",
+        y = ~yvals, 
+        marker=list(size=15),
+        frame = ~Time, 
         type = 'scatter',
-        mode = 'markers',
-        marker = list(size = 1.75, color = "green"))
+        mode = 'markers') %>% add_trace(mode = 'lines+markers')%>%layout(xaxis = list(range=c(-(r1+r2),(r1+r2))))%>%layout(yaxis = list(range=c(-(r1+r2),(r1+r2))))%>%animation_opts(frame = 1)
 
   })
-
+  
   output$c_conj_plot <- renderPlotly({
     intnum<-input$int_num
     
